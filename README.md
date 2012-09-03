@@ -5,10 +5,10 @@ This script suspends a computer based on the network activity.
 This is useful, if you have a server that is accessed
 rarely and that is able to wake on unicast packets.
 
-It is was written for a proof-of-concept, that servers can be suspended
+It was written for a proof of concept, that servers can be suspended
 in order to save resources.
 
-## Installation
+### Installation
 
 You need Python 3.
 
@@ -23,11 +23,11 @@ In Debian, one would put something like this in `/etc/rc.local`:
 
 
 
-## Configuration
+### Configuration
 
 The first few lines in `autosuspend.py`.
 
-## Dispatchers
+### Dispatchers
 
 Executable scripts in `autosuspend.pre/` and `autosuspend.post/` will be run
 (guess what:) right before and after suspending.
