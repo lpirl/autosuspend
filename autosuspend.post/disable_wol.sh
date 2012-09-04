@@ -1,10 +1,8 @@
 #!/bin/bash
 
-# supported wakes:
-#              p  Wake on phy activity
-#              u  Wake on unicast messages
-#              m  Wake on multicast messages
-#              b  Wake on broadcast messages
-#              g  Wake on MagicPacket(tm)
+# WOL should be generally disabled so that the machine can be shut down
+# normally w/o the need to disable WOL manually.
+# Otherwise, you may wonder why the box is powering on again after
+# power off.
 
 /sbin/ethtool -s eth0 wol g

@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+# needed because suspending (what could fail) during
+# synchronization or upgrade processes could lead to data loss or
+# a corrupted system
+
 from subprocess import call, check_output
 from sys import exit
 
