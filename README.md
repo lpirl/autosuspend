@@ -14,8 +14,8 @@ You need Python 3.
 
 Checkout this repository and simply run `./autosuspend.py`.
 
-If you are not interested in what autosuspend is doing, invoke with
-`pyhton3 -O ./autosuspend.py` (recommended).
+If you are interested in what autosuspend is doing, invoke with
+`pyhton3 ./autosuspend.py`.
 
 In Debian, one would put something like this in `/etc/rc.local`:
 
@@ -31,7 +31,7 @@ The first few lines in `autosuspend.py`.
 
 Executable scripts in `autosuspend.pre/` and `autosuspend.post/` will be run
 (guess what:) right before and after suspending.
-Scripts exiting with a status other than `0` in `autosuspend.pre/` can
+Scripts exiting with a status other than `0` in `autosuspend.pre/` will
 prevent the machine from suspending.
 
 ## How to set up a automatically suspending server
