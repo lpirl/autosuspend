@@ -18,7 +18,7 @@ requires at least one of them.
 
 Besides the engagement of the operators to maximize the efficiency
 of their servers and data centers,
- there are more things that can be taken into account
+there are more things that can be taken into account
 in order to lower the power consumption of the machines for the cost of a little performance decrease.
 
 A bunch of proven mechanisms to reduce power consumption can be found
@@ -34,7 +34,7 @@ what customers want.
 
 As a prove of concept, I decided to try to set up a server that suspends
 automatically when it is idle and that is waking up again if there is
- work to be done. This obviously only makes sense, if the services
+work to be done. This obviously only makes sense, if the services
 on that server are not accessed too frequently:
 the more idle times, the better.
 Due to the concept that the uptime is controlled by the actual usage,
