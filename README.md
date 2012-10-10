@@ -36,4 +36,4 @@ prevent the machine from suspending.
 
 ## How to set up a automatically suspending server
 
-TODO: Write detailed manual.
+See [here](https://github.com/lpirl/autosuspend/blob/master/howto.rst "how to").

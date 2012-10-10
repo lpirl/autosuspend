@@ -2,7 +2,7 @@
 how to set up an automatically suspending and waking server (using Linux)
 =========================================================================
 
-.. contents:: contents
+.. contents::
 	:depth: 2
 
 .. raw:: pdf
