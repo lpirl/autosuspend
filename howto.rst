@@ -26,12 +26,6 @@ in consumer machines, such as notebooks. These mechanisms include
 CPU/GPU frequency scaling, power management of devices or
 the power states of the machine itself (hibernate, sleep, …).
 
-Why do the vendors for server hardware are making so little use
-of these concepts? It is probably a question of attitude.
-Servers are important business elements, they have to provide 100% performance
-24/7, and drying your hair behind the server rack in roughly 10 seconds is
-what customers want.
-
 As a prove of concept, I decided to try to set up a server that suspends
 automatically when it is idle and that is waking up again if there is
 work to be done. This obviously only makes sense, if the services
@@ -100,8 +94,8 @@ and connect your suspending server directly to it
 (no intermediates, only one single cable).
 
 To make the whole thing much more comfortable, you preferably use a
-very **low power** consuming, fanless machine
-as a **proxy** to your suspending server.
+very low power consuming, fanless machine
+as a [proxy](#proxy) to your suspending server.
 
 suspending
 ----------
@@ -334,10 +328,13 @@ to see which program is listening to the rest of the world.
 HTTP
 ....
 
-**Do not use Port 80**. Every few minutes, some crawler pops by and asks for
-/ at your domain or IP-Address (yes, this *also* happens if you don't have
+If - for instance - the proxy serves the data mounted from the suspending server,
+**do not mount them to /** or at least use a port other than 80 or 8080.
+
+Every few minutes, some crawler pops by and asks for
+/ at your domain or IP-Address (yes, this also happens if you don't have
 a domain).
-Port 8080 is a standard port, too, but seems to be queried less often.
+Thus, make sure that hits on / of your site do not require access to the suspending server in order to avoid unnecessary wake-ups.
 
 SSHFS / SFTP
 ............
@@ -346,6 +343,9 @@ Sad story, but even if you disable KeepAlive in your ssh_config,
 ssh woke my machine very regularly so that I had no time in suspend in
 the end. **Don't use it for permanent mounts**
 (or tell me how to keep it from talking to the server all the time).
+
+If you want to use SFTP anyways, you'd have to use *autofs*
+(or the *automount* mount option for *systemd*, respectively).
 
 SMB
 ...
