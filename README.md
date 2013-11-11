@@ -10,6 +10,8 @@ in order to save resources.
 
 ### Installation
 
+(Pssssst: for best success, you want to read the detailed How-to. See bottom of page.)
+
 You need Python 3.
 
 Checkout this repository and simply run `./autosuspend.py`.
@@ -34,6 +36,6 @@ Executable scripts in `autosuspend.pre/` and `autosuspend.post/` will be run
 Scripts exiting with a status other than `0` in `autosuspend.pre/` will
 prevent the machine from suspending.
 
-## How to set up a automatically suspending server
+## Detailed How-to
 
 See [here](https://github.com/lpirl/autosuspend/blob/master/howto.rst "how to").
