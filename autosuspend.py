@@ -23,7 +23,7 @@ from os import walk, access, X_OK, chdir
 from os.path import join, dirname
 import sys
 
-chdir(dirname(sys.argv[0]))
+chdir(dirname(sys.argv[0]) or '.')
 
 def debug(msg):
 	if __debug__:
