@@ -21,7 +21,7 @@ WAKE_ON=ug
 # fix for Intel e1000* cards:
 for (( i=0; i<${#WAKE_ON}; i++ )); do
   TYPE=${WAKE_ON:$i:1}
-  [ $(ethtool $IF | grep -P "\tWake-on" | grep -c "$TYPE") -eq 0 ] && continue
+  [ $(ethtool $IF | grep -P "\tWake-on" | grep -c "$TYPE") -eq 1 ] && continue
   MSG="You need to reboot your machine in order to make wake on LAN work.\n"
   MSG+="Please refer to section 'Enabling Wake on LAN' at \n"
   MSG+="http://www.cyberciti.biz/files/linux-kernel/Documentation/networking/e1000e.txt \n"
