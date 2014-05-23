@@ -27,7 +27,7 @@ for (( i=0; i<${#WAKE_ON}; i++ )); do
   MSG+="http://www.cyberciti.biz/files/linux-kernel/Documentation/networking/e1000e.txt \n"
   MSG+="for further details."
   echo -e $MSG
-  (echo -e $MSG | sendmail s "autosyspendat $(hostname): reboot required" $(whoami)) \
+  (echo -e $MSG | mail -s "autosyspend at $(hostname): reboot required" $(whoami)) \
     > /dev/null 2>&1
   break
 done
