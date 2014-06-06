@@ -79,6 +79,12 @@ measurements = []
 while True:
 	time_now = time()
 	packets_now = get_packets()
+
+	if packets_now is None:
+		print("Could not determine packet count for '%s'" % INTERFACE)
+		print("Is this properlys configured?")
+		exit(1)
+
 	measurements.append((time_now, packets_now))
 	debug("%i packets at %s" % (packets_now, ctime(time_now)))
 
@@ -106,4 +112,3 @@ while True:
 				measurements = []
 				break
 	sleep(SLEEP_TIME)
-
