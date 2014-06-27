@@ -6,6 +6,7 @@ if __name__ != '__main__':
 	)
 
 import argparse
+import logging
 from subprocess import call, check_output
 from time import time, sleep, ctime
 from string import whitespace
@@ -17,10 +18,6 @@ import sys
 ####################
 # functions
 #
-
-def debug(msg):
-	if __debug__:
-		print(msg)
 
 def call_dispatcher(executable):
 	return call((executable, args.interface,))
@@ -37,15 +34,15 @@ def get_executables(directory):
 
 def dispatch_pre():
 	for executable in get_executables(DISPATCHERS_DIR_PRE):
-		debug("		will run '%s' as a pre dispatcher" % executable)
+		logging.debug("		will run '%s' as a pre dispatcher" % executable)
 		if call_dispatcher(executable):
-			debug("			returned not zero!")
+			logging.debug("			returned not zero!")
 			return False
 	return True
 
 def dispatch_post():
 	for executable in get_executables(DISPATCHERS_DIR_POST):
-		debug("		will run '%s' as a post dispatcher" % executable)
+		logging.debug("		will run '%s' as a post dispatcher" % executable)
 		call_dispatcher(executable)
 
 def try_to_sleep():
@@ -84,6 +81,8 @@ parser.add_argument('-s', '--threshold', type=int, default=2500,
                     help='Amount of packages to consider the interface as active.')
 parser.add_argument('-c', '--sleep_cmd', type=str, default="s2ram",
                     help='The executable to call to suspend the machine.')
+parser.add_argument('-d', '--debug', action='store_true', default=False,
+                    help='Print debug output?.')
 parser.add_argument('interface', type=str,
                     help='Use which interface to determine network activity?')
 args = parser.parse_args()
@@ -95,7 +94,13 @@ args = parser.parse_args()
 DISPATCHERS_DIR_PRE = "./autosuspend.pre/"
 DISPATCHERS_DIR_POST = "./autosuspend.post/"
 
-debug("Computer will sleep after a network activity less than %i packets in %i seconds on %s"
+logging.getLogger().name = "autosuspend"
+
+if args.debug:
+	logging.getLogger().setLevel(logging.DEBUG)
+
+logging.debug(
+	"Will sleep after network activity less than %i packets in %i seconds on %s"
 	% (args.threshold, args.timeout, args.interface) )
 
 chdir(dirname(sys.argv[0]) or '.')
@@ -106,12 +111,14 @@ while True:
 	packets_now = get_packets()
 
 	if packets_now is None:
-		print("Could not determine packet count for '%s'" % args.interface)
-		print("Is this properlys configured?")
+		logging.critical(
+			"Could not determine packet count for '%s'" % args.interface
+		)
+		logging.critical("Is this properly configured?")
 		exit(1)
 
 	measurements.append((time_now, packets_now))
-	debug("%i packets at %s" % (packets_now, ctime(time_now)))
+	logging.debug("%i packets at %s" % (packets_now, ctime(time_now)))
 
 	for measurement in measurements[:]:
 		measurement_time = measurement[0]
@@ -121,7 +128,7 @@ while True:
 		expired = (time_now - measurement_time) > args.timeout
 
 		if active:
-			debug("	Activity - deleting record (%s => %i)"
+			logging.debug("	Activity - deleting record (%s => %i)"
 					% (ctime(measurement_time), measurement_packets))
 			measurements.remove(measurement)
 			continue
@@ -129,11 +136,11 @@ while True:
 		if not expired:
 			break
 		else:
-			debug("	Not enough activity since %s! Try to sleep..."
+			logging.debug("	Not enough activity since %s! Try to sleep..."
 					% ctime(measurement_time))
 			measurements.remove(measurement)
 			if try_to_sleep():
-				debug("	Sleep was successfull! Resetting...")
+				logging.debug("	Sleep was successfull! Resetting...")
 				measurements = []
 				break
 	sleep(args.interval)
