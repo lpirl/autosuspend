@@ -1,21 +1,11 @@
 #!/usr/bin/env python3
 
-##### CONFIGURATION #####
-# what interface to monitor?
-INTERFACE="eth0"
-# wait how many seconds before suspending since last network activity?
-ACTIVITY_TIMEOUT=1800
-# how long to sleep between measurements?
-SLEEP_TIME=60
-# how many packets must be transferred to consider the interface as active?
-ACTIVITY_THRESHOLD=2500
-# directory with dispatcher scripts
-DISPATCHERS_DIR_PRE="./autosuspend.pre/"
-DISPATCHERS_DIR_POST="./autosuspend.post/"
-# command to perform suspend
-SLEEP_CMD="s2ram"
-#########################
+if __name__ != '__main__':
+	raise NotImplementedError(
+		"This is module should only be called directly from command line."
+	)
 
+import argparse
 from subprocess import call, check_output
 from time import time, sleep, ctime
 from string import whitespace
@@ -23,14 +13,17 @@ from os import walk, access, X_OK, chdir
 from os.path import join, dirname
 import sys
 
-chdir(dirname(sys.argv[0]) or '.')
+
+####################
+# functions
+#
 
 def debug(msg):
 	if __debug__:
 		print(msg)
 
 def call_dispatcher(executable):
-	return call((executable, INTERFACE,))
+	return call((executable, args.interface,))
 
 def get_executables(directory):
 	executables = []
@@ -57,7 +50,7 @@ def dispatch_post():
 
 def try_to_sleep():
 	if dispatch_pre():
-		call([SLEEP_CMD])
+		call([args.sleep_cmd], shell=True)
 		dispatch_post()
 		return True
 	return False
@@ -69,14 +62,43 @@ def get_packets():
 	file.close()
 	lines.reverse()
 	for line in lines:
-		if INTERFACE in line:
+		if args.interface in line:
 			line = line.replace(":", " ")
 			line = line.split()
 			packet_counts = [ int(line[i]) for i in packet_fields ]
 			return sum( packet_counts )
 
+
+####################
+# CLI args.interface
+#
+parser = argparse.ArgumentParser(
+	description="This script suspends your computer on few network activity.",
+	formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+parser.add_argument('-t', '--timeout', type=int, default=1800,
+                    help='How many seconds must the network be idle?')
+parser.add_argument('-i', '--interval', type=int, default=60,
+                    help='How many seconds to sleep between measurements?')
+parser.add_argument('-s', '--threshold', type=int, default=2500,
+                    help='Amount of packages to consider the interface as active.')
+parser.add_argument('-c', '--sleep_cmd', type=str, default="s2ram",
+                    help='The executable to call to suspend the machine.')
+parser.add_argument('interface', type=str,
+                    help='Use which interface to determine network activity?')
+args = parser.parse_args()
+
+
+####################
+# main program
+#
+DISPATCHERS_DIR_PRE = "./autosuspend.pre/"
+DISPATCHERS_DIR_POST = "./autosuspend.post/"
+
 debug("Computer will sleep after a network activity less than %i packets in %i seconds on %s"
-	% (ACTIVITY_THRESHOLD, ACTIVITY_TIMEOUT, INTERFACE) )
+	% (args.threshold, args.timeout, args.interface) )
+
+chdir(dirname(sys.argv[0]) or '.')
 
 measurements = []
 while True:
@@ -84,7 +106,7 @@ while True:
 	packets_now = get_packets()
 
 	if packets_now is None:
-		print("Could not determine packet count for '%s'" % INTERFACE)
+		print("Could not determine packet count for '%s'" % args.interface)
 		print("Is this properlys configured?")
 		exit(1)
 
@@ -95,8 +117,8 @@ while True:
 		measurement_time = measurement[0]
 		measurement_packets = measurement[1]
 
-		active = (packets_now - measurement_packets) > ACTIVITY_THRESHOLD
-		expired = (time_now - measurement_time) > ACTIVITY_TIMEOUT
+		active = (packets_now - measurement_packets) > args.threshold
+		expired = (time_now - measurement_time) > args.timeout
 
 		if active:
 			debug("	Activity - deleting record (%s => %i)"
@@ -114,4 +136,4 @@ while True:
 				debug("	Sleep was successfull! Resetting...")
 				measurements = []
 				break
-	sleep(SLEEP_TIME)
+	sleep(args.interval)
