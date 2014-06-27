@@ -14,20 +14,18 @@ in order to save resources.
 
 You need Python 3.
 
-Checkout this repository and simply run `./autosuspend.py`.
+Checkout this repository and simply run `./autosuspend.py eth0`.
 
 If you are interested in what autosuspend is doing, invoke with
-`pyhton3 ./autosuspend.py`.
+`./autosuspend.py -d eth0`.
 
 In Debian, one would put something like this in `/etc/rc.local`:
 
-	nice -n 10 /usr/bin/python3 -O /path/to/autosuspend.py &
-
-
+	nice -n 10 /path/to/autosuspend.py eth0 &
 
 ### Configuration
 
-The first few lines in `autosuspend.py`.
+See `./autosuspend.py -h`.
 
 ### Dispatchers
 
@@ -39,4 +37,4 @@ Every script will receive the interface we are listening on as only argument.
 
 ## Detailed How-to
 
-See [here](https://github.com/lpirl/autosuspend/blob/master/howto.rst "how to").
+See [here](blob/master/howto.rst "how to").

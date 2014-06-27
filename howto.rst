@@ -113,10 +113,10 @@ Please clone the `repository <https://github.com/lpirl/autosuspend/>`_
 somewhere to your suspending server.
 
 ``autosuspend.py``: **What it does** (configuration options in brackets):
-frequently (``SLEEP_TIME``) count transmitted packets for a
-network interface (``INTERFACE``) and suspend the machine if there
-is an interval (``ACTIVITY_TIMEOUT``) with less than a few
-(``ACTIVITY_THRESHOLD``) packets transmitted.
+frequently (``INTERVAL``) count transmitted packets for a
+network interface (``interface``) and suspend the machine if there
+is an interval (``TIMEOUT``) with less than a few
+(``THRESHOLD``) packets transmitted.
 
 Please configure these values in ``autosuspend.py`` according to your
 needs (possibly needs experimentation).
@@ -145,7 +145,7 @@ On Debian, you could add the following line to your ``/etc/rc.local``:
 
 .. code-block:: bash
 
-	nice -n 10 /usr/bin/python3 -O /path/to/autosuspend.py &
+	nice -n 10 /path/to/autosuspend.py eth0 &
 
 If your machine does not come back from the suspension, you may have to
 check you BIOS for
