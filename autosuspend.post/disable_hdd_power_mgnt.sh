@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 
 # Since we do (radical) power management by suspending the machine,
 # we do not want the HDD's to spin down by itselfs.
