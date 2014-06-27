@@ -29,6 +29,9 @@ def debug(msg):
 	if __debug__:
 		print(msg)
 
+def call_dispatcher(executable):
+	return call((executable, INTERFACE,))
+
 def get_executables(directory):
 	executables = []
 	for root, dirs, files in walk(directory):
@@ -42,7 +45,7 @@ def get_executables(directory):
 def dispatch_pre():
 	for executable in get_executables(DISPATCHERS_DIR_PRE):
 		debug("		will run '%s' as a pre dispatcher" % executable)
-		if call(executable, shell=True):
+		if call_dispatcher(executable):
 			debug("			returned not zero!")
 			return False
 	return True
@@ -50,7 +53,7 @@ def dispatch_pre():
 def dispatch_post():
 	for executable in get_executables(DISPATCHERS_DIR_POST):
 		debug("		will run '%s' as a post dispatcher" % executable)
-		call(executable, shell=True)
+		call_dispatcher(executable)
 
 def try_to_sleep():
 	if dispatch_pre():

@@ -1,5 +1,6 @@
 #!/bin/bash
 
-# required to tell the kernel, that eth0 is allowed to wake the machine
+# required to tell the kernel, that the interface is allowed to wake the
+# machine
 
-echo enabled > /sys/class/net/eth0/device/power/wakeup
+echo enabled > /sys/class/net/$1/device/power/wakeup

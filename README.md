@@ -35,6 +35,7 @@ Executable scripts in `autosuspend.pre/` and `autosuspend.post/` will be run
 (guess what:) right before and after suspending.
 Scripts exiting with a status other than `0` in `autosuspend.pre/` will
 prevent the machine from suspending.
+Every script will receive the interface we are listening on as only argument.
 
 ## Detailed How-to
 
