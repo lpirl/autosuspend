@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 FIND_DEVS='sd[c-z]'
 
 sync
