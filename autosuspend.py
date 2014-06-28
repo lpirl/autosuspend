@@ -79,7 +79,7 @@ parser.add_argument('-i', '--interval', type=int, default=60,
                     help='How many seconds to sleep between measurements?')
 parser.add_argument('-s', '--threshold', type=int, default=2500,
                     help='Amount of packages to consider the interface as active.')
-parser.add_argument('-c', '--sleep_cmd', type=str, default="s2ram",
+parser.add_argument('-c', '--sleep_cmd', type=str, default="pm-suspend",
                     help='The executable to call to suspend the machine.')
 parser.add_argument('-d', '--debug', action='store_true', default=False,
                     help='Print debug output?.')
