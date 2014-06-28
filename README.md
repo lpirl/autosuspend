@@ -37,4 +37,4 @@ Every script will receive the interface we are listening on as only argument.
 
 ## Detailed How-to
 
-See [here](blob/master/howto.rst "how to").
+See [here](howto.rst "how to").
