@@ -1,4 +1,7 @@
 #!/bin/bash
+
+# this will be (only?) required to spin down external drives
+
 FIND_DEVS='sd[c-z]'
 
 sync
