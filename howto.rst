@@ -325,41 +325,31 @@ Use something like
 
 to see which program is listening to the rest of the world.
 
+If you have a hard time figuring out who wakes your server too frequently,
+dump all the traffic at the server using *tcpdump* and analyze the
+dump using *wireshark*. If you then do not get any insights which unicast
+packages wake the server, you probably won't ever. ;)
+
 HTTP
 ....
 
-If - for instance - the proxy serves the data mounted from the suspending server,
-**do not mount them to /** or at least use a port other than 80 or 8080.
+If - for instance - your proxy serves the data mounted from the suspending server via HTTP,
+**do not mount the data to the root URL** or at least use a port other than 80 or 8080.
 
 Every few minutes, some crawler pops by and asks for
-/ at your domain or IP-Address (yes, this also happens if you don't have
+*/* at your domain or IP-Address (yes, this also happens if you don't have
 a domain).
-Thus, make sure that hits on / of your site do not require access to the suspending server in order to avoid unnecessary wake-ups.
+Thus, make sure that hits on / of your site do not require access to the suspending server
+in order to avoid unnecessary wake-ups.
 
-SSHFS / SFTP
-............
+mounts
+......
 
-Sad story, but even if you disable KeepAlive in your ssh_config,
-ssh woke my machine very regularly so that I had no time in suspend in
-the end. **Don't use it for permanent mounts**
-(or tell me how to keep it from talking to the server all the time).
+No matter if you use *SMB*, *NFS*, *SFTP* or alike, it is definitely preferable to
+**use autofs** (or the *automount* mount option for *systemd*, respectively).
 
-If you want to use SFTP anyways, you'd have to use *autofs*
-(or the *automount* mount option for *systemd*, respectively).
-
-SMB
-...
-
-This protocol worked very well for me. We know that SMB is normally not
-the way to go, but it provides interoperability and does only talk to
-the server when it is actually in use.
-Works like a charm with permanent mounts.
-
-NFS
-...
-
-I have no experience with NFS but I would expect it to behave like SMB
-concerning network communication.
+I tried *SMB* and *SFTP* without *autofs* and it turnes out that you can't stop those
+protocols from sending keepalive packets or similar.
 
 cron
 ....
@@ -371,4 +361,5 @@ or regularly (you could use: *fcron*, *anachron*, *vixie cron*, …).
 ntp
 ...
 
-Synchronize your clock using *ntp*. Most BIOS clocks are bad.
+Synchronize your clock using *ntp*.
+Most BIOS clocks are very inaccurate when suspending/resuming often.
