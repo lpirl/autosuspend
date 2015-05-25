@@ -1,0 +1,9 @@
+[Unit]
+Description=AutoSuspend for servers
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/autosuspend.py enp0s10 -t 600
+
+[Install]
+WantedBy=multi-user.target

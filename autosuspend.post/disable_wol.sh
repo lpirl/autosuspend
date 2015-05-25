@@ -5,4 +5,4 @@
 # Otherwise, you may wonder why the box is powering on again after
 # power off.
 
-/sbin/ethtool -s $1 wol g
+/sbin/ethtool -s $1 wol d

@@ -7,7 +7,7 @@
 from subprocess import call, check_output
 from sys import exit
 
-DO_NOT_DISTURB=["aptitude", "apt-get", "rsync"]
+DO_NOT_DISTURB=["pacman", "mv", "rsync", "tmux", "cp", "wget", "curl", "aria2c"]
 
 processes = check_output(["ps", "-e" ,"-c"])
 processes = processes.splitlines()

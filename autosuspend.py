@@ -29,14 +29,14 @@ def get_executables(directory):
 			script = join(root, filename)
 			if access(script, X_OK):
 				executables.append(script)
-	executables.sort(reverse=True)
+	executables.sort
 	return executables
 
 def dispatch_pre():
 	for executable in get_executables(DISPATCHERS_DIR_PRE):
 		logging.debug("		will run '%s' as a pre dispatcher" % executable)
 		if call_dispatcher(executable):
-			logging.debug("			returned not zero!")
+			logging.info("'%s' returned not zero!" % executable)
 			return False
 	return True
 
@@ -91,8 +91,8 @@ args = parser.parse_args()
 ####################
 # main program
 #
-DISPATCHERS_DIR_PRE = "./autosuspend.pre/"
-DISPATCHERS_DIR_POST = "./autosuspend.post/"
+DISPATCHERS_DIR_PRE = "/etc/autosuspend/autosuspend.pre/"
+DISPATCHERS_DIR_POST = "/etc/autosuspend/autosuspend.post/"
 
 logging.getLogger().name = "autosuspend"
 
@@ -136,11 +136,11 @@ while True:
 		if not expired:
 			break
 		else:
-			logging.debug("	Not enough activity since %s! Try to sleep..."
+			logging.info("	Not enough activity since %s! Try to sleep..."
 					% ctime(measurement_time))
 			measurements.remove(measurement)
 			if try_to_sleep():
-				logging.debug("	Sleep was successfull! Resetting...")
+				logging.info("	Sleep was successfull! Resetting...")
 				measurements = []
 				break
 	sleep(args.interval)
