@@ -83,7 +83,9 @@ parser.add_argument('-s', '--threshold', type=int, default=2500,
 parser.add_argument('-c', '--sleep_cmd', type=str, default="pm-suspend",
                     help='The executable to call to suspend the machine.')
 parser.add_argument('-d', '--debug', action='store_true', default=False,
-                    help='Print debug output?.')
+                    help='Print debug output?')
+parser.add_argument('-q', '--quiet', action='store_true', default=False,
+                    help='Be quiet?')
 parser.add_argument('interface', type=str,
                     help='Use which interface to determine network activity?')
 args = parser.parse_args()
@@ -99,6 +101,9 @@ logging.getLogger().name = "autosuspend"
 
 if args.debug:
 	logging.getLogger().setLevel(logging.DEBUG)
+
+if args.quiet:
+	logging.getLogger().setLevel(logging.WARN)
 
 logging.debug(
 	"Will sleep after network activity less than %i packets in %i seconds on %s"
