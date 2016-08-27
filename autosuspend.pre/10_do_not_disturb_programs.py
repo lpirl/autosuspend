@@ -18,6 +18,7 @@ DO_NOT_DISTURB = (
 	"wget",
 	"curl",
 	"aria2c",
+	"btrfs",
 )
 
 processes = check_output(["ps", "-e" ,"-c"])
