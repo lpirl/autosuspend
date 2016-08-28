@@ -23,6 +23,18 @@ In Debian, one would put something like this in `/etc/rc.local`:
 
 	nice -n 10 /path/to/autosuspend.py eth0 &
 
+For Arch, there is a Systemd service and you can install autosuspend for all users like this:
+
+```
+sudo cp autosuspend.py /usr/bin
+sudo mkdir -p /etc/autosuspend
+sudo cp -R autosuspend.pre autosuspend.post /etc/autosuspend/
+
+sudo cp autosuspend.service /usr/lib/systemd/system
+sudo systemctl enable autosuspend.service
+sudo systemctl start autosuspend.service
+```
+
 ### Configuration
 
 See `./autosuspend.py -h`.
@@ -38,3 +50,4 @@ Every script will receive the interface we are listening on as only argument.
 ## Detailed How-to
 
 See [here](howto.rst "how to").
+

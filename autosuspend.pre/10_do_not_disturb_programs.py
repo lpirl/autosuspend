@@ -13,12 +13,12 @@ DO_NOT_DISTURB = (
 	"rsync",
 	"pacman",
 	"mv",
-	"rsync",
 	"cp",
 	"wget",
 	"curl",
 	"aria2c",
 	"btrfs",
+	"tmux",
 )
 
 processes = check_output(["ps", "-e" ,"-c"])

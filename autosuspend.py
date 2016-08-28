@@ -12,7 +12,7 @@ from subprocess import call, check_output
 from time import time, sleep, ctime
 from string import whitespace
 from os import walk, access, X_OK, chdir
-from os.path import join, dirname
+from os.path import join, dirname, isdir
 import sys
 
 
@@ -23,26 +23,29 @@ import sys
 def call_dispatcher(executable):
 	return call((executable, args.interface,))
 
-def get_executables(directory):
+def get_executables(directories):
 	executables = []
-	for root, dirs, files in walk(directory):
-		for filename in files:
-			script = join(root, filename)
-			if access(script, X_OK):
-				executables.append(script)
-	executables.sort(reverse=True)
+	for directory in directories:
+		if not isdir(directory):
+			continue
+		for root, dirs, files in walk(directory):
+			for filename in files:
+				script = join(root, filename)
+				if access(script, X_OK):
+					executables.append(script)
+	executables.sort
 	return executables
 
 def dispatch_pre():
-	for executable in get_executables(DISPATCHERS_DIR_PRE):
+	for executable in get_executables(DISPATCHERS_DIRS_PRE):
 		logging.debug("		will run '%s' as a pre dispatcher" % executable)
 		if call_dispatcher(executable):
-			logging.debug("			returned not zero!")
+			logging.info("'%s' returned not zero!" % executable)
 			return False
 	return True
 
 def dispatch_post():
-	for executable in get_executables(DISPATCHERS_DIR_POST):
+	for executable in get_executables(DISPATCHERS_DIRS_POST):
 		logging.debug("		will run '%s' as a post dispatcher" % executable)
 		call_dispatcher(executable)
 
@@ -94,8 +97,14 @@ args = parser.parse_args()
 ####################
 # main program
 #
-DISPATCHERS_DIR_PRE = "./autosuspend.pre/"
-DISPATCHERS_DIR_POST = "./autosuspend.post/"
+DISPATCHERS_DIRS_PRE = (
+	"/etc/autosuspend/autosuspend.pre/",
+	"./autosuspend.pre/",
+)
+DISPATCHERS_DIRS_POST = (
+	"/etc/autosuspend/autosuspend.post/",
+	"./autosuspend.post/",
+)
 
 logging.getLogger().name = "autosuspend"
 
@@ -142,11 +151,11 @@ while True:
 		if not expired:
 			break
 		else:
-			logging.debug("	Not enough activity since %s! Try to sleep..."
+			logging.info("	Not enough activity since %s! Try to sleep..."
 					% ctime(measurement_time))
 			measurements.remove(measurement)
 			if try_to_sleep():
-				logging.debug("	Sleep was successfull! Resetting...")
+				logging.info("	Sleep was successfull! Resetting...")
 				measurements = []
 				break
 	sleep(args.interval)
