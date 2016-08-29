@@ -1,20 +1,18 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
-if __name__ != '__main__':
-	raise NotImplementedError(
-		"This is module should only be called directly from command line."
-	)
-
-import argparse
+import sys
 import logging
-from subprocess import call, check_output, DEVNULL
+import argparse
+from subprocess import call, DEVNULL
 from time import time, sleep, ctime
-from string import whitespace
 from os import walk, access, X_OK, chdir
 from os.path import join, dirname, isdir
-import sys
 
+if __name__ != '__main__':
+  raise NotImplementedError(
+      "This is module should only be called directly from command line."
+  )
 
 ####################
 # functions
@@ -22,68 +20,68 @@ import sys
 
 def _call(*call_args, **call_kwargs):
 
-	call_kwargs = {}
-	if args.quiet:
-		call_kwargs['stdout'] = DEVNULL
+  call_kwargs = {}
+  if args.quiet:
+    call_kwargs['stdout'] = DEVNULL
 
-	return call(*call_args, **call_kwargs)
+  return call(*call_args, **call_kwargs)
 
 def call_dispatcher(executable):
-	return _call((executable, args.interface,))
+  return _call((executable, args.interface,))
 
 def get_executables(directories):
-	executables = []
-	for directory in directories:
-		if not isdir(directory):
-			continue
-		for root, dirs, files in walk(directory):
-			for filename in files:
-				script = join(root, filename)
-				if access(script, X_OK):
-					executables.append(script)
-	executables.sort
-	return executables
+  executables = []
+  for directory in directories:
+    if not isdir(directory):
+      continue
+    for root, _, files in walk(directory):
+      for filename in files:
+        script = join(root, filename)
+        if access(script, X_OK):
+          executables.append(script)
+  executables.sort()
+  return executables
 
 def dispatch_pre():
-	for executable in get_executables(DISPATCHERS_DIRS_PRE):
-		logging.info("running '%s' as a pre dispatcher" % executable)
-		if call_dispatcher(executable):
-			logging.info("'%s' returned non-zero exit code!" % executable)
-			return False
-	return True
+  for executable in get_executables(DISPATCHERS_DIRS_PRE):
+    logging.info("running '%s' as a pre dispatcher", executable)
+    if call_dispatcher(executable):
+      logging.info("'%s' returned non-zero exit code!", executable)
+      return False
+  return True
 
 def dispatch_post():
-	for executable in get_executables(DISPATCHERS_DIRS_POST):
-		logging.info("running '%s' as a post dispatcher" % executable)
-		call_dispatcher(executable)
+  for executable in get_executables(DISPATCHERS_DIRS_POST):
+    logging.info("running '%s' as a post dispatcher", executable)
+    call_dispatcher(executable)
 
 def try_to_sleep():
-	if dispatch_pre():
-		_call([args.sleep_cmd], shell=True)
-		dispatch_post()
-		return True
-	return False
+  if dispatch_pre():
+    _call([args.sleep_cmd], shell=True)
+    dispatch_post()
+    return True
+  return False
 
 def get_packets():
-	packet_fields=[2,10]
-	file = open("/proc/net/dev", 'r')
-	lines = file.readlines()
-	file.close()
-	lines.reverse()
-	for line in lines:
-		if args.interface in line:
-			line = line.replace(":", " ")
-			line = line.split()
-			packet_counts = [ int(line[i]) for i in packet_fields ]
-			return sum( packet_counts )
+  packet_fields = [2, 10]
+  file = open("/proc/net/dev", 'r')
+  lines = file.readlines()
+  file.close()
+  lines.reverse()
+  for line in lines:
+    if args.interface in line:
+      line = line.replace(":", " ")
+      line = line.split()
+      packet_counts = [int(line[i]) for i in packet_fields]
+      return sum(packet_counts)
 
 
 ####################
 # CLI args.interface
 #
 parser = argparse.ArgumentParser(
-	description="This script suspends your computer on few network activity.",
-	formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    description="This script suspends your computer on few network activity.",
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 parser.add_argument('-t', '--timeout', type=int, default=1800,
                     help='How many seconds must the network be idle?')
@@ -106,65 +104,66 @@ args = parser.parse_args()
 # main program
 #
 DISPATCHERS_DIRS_PRE = (
-	"/etc/autosuspend/autosuspend.pre/",
-	"./autosuspend.pre/",
+    "/etc/autosuspend/autosuspend.pre/",
+    "./autosuspend.pre/",
 )
 DISPATCHERS_DIRS_POST = (
-	"/etc/autosuspend/autosuspend.post/",
-	"./autosuspend.post/",
+    "/etc/autosuspend/autosuspend.post/",
+    "./autosuspend.post/",
 )
 
 logging.getLogger().name = "autosuspend"
 
 logging.getLogger().setLevel(logging.INFO)
 if args.debug:
-	logging.getLogger().setLevel(logging.DEBUG)
+  logging.getLogger().setLevel(logging.DEBUG)
 
 if args.quiet:
-	logging.getLogger().setLevel(logging.WARN)
+  logging.getLogger().setLevel(logging.WARN)
 
 logging.info(
-	"Will sleep after network activity less than %i packets in %i seconds on %s"
-	% (args.threshold, args.timeout, args.interface) )
+    "Will sleep after network activity less than %i packets in %i seconds on %s"
+    % (args.threshold, args.timeout, args.interface)
+)
 
 chdir(dirname(sys.argv[0]) or '.')
 
 measurements = []
 while True:
-	time_now = time()
-	packets_now = get_packets()
+  time_now = time()
+  packets_now = get_packets()
 
-	if packets_now is None:
-		logging.critical(
-			"Could not determine packet count for '%s'" % args.interface
-		)
-		logging.critical("Is this properly configured?")
-		exit(1)
+  if packets_now is None:
+    logging.critical(
+        "Could not determine packet count for '%s'", args.interface
+    )
+    logging.critical("Is this properly configured?")
+    exit(1)
 
-	measurements.append((time_now, packets_now))
-	logging.debug("%i packets at %s" % (packets_now, ctime(time_now)))
+  measurements.append((time_now, packets_now))
+  logging.debug("%i packets at %s", packets_now, ctime(time_now))
 
-	for measurement in measurements[:]:
-		measurement_time = measurement[0]
-		measurement_packets = measurement[1]
+  for measurement in measurements[:]:
+    measurement_time = measurement[0]
+    measurement_packets = measurement[1]
 
-		active = (packets_now - measurement_packets) > args.threshold
-		expired = (time_now - measurement_time) > args.timeout
+    active = (packets_now - measurement_packets) > args.threshold
+    expired = (time_now - measurement_time) > args.timeout
 
-		if active:
-			logging.debug("Activity - deleting record (%s => %i)"
-					% (ctime(measurement_time), measurement_packets))
-			measurements.remove(measurement)
-			continue
+    if active:
+      logging.debug("Activity - deleting record (%s => %i)",
+                    ctime(measurement_time), measurement_packets)
+      measurements.remove(measurement)
+      continue
 
-		if not expired:
-			break
-		else:
-			logging.info("Not enough activity since %s! Try to sleep..."
-					% ctime(measurement_time))
-			measurements.remove(measurement)
-			if try_to_sleep():
-				logging.info("Sleep was successful! Resetting...")
-				measurements = []
-				break
-	sleep(args.interval)
+    if not expired:
+      break
+    else:
+      logging.info("Not enough activity since %s! Try to sleep...",
+                   ctime(measurement_time))
+      measurements.remove(measurement)
+      if try_to_sleep():
+        logging.info("Sleep was successful! Resetting...")
+        measurements = []
+        break
+  sleep(args.interval)
