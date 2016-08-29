@@ -8,7 +8,7 @@ if __name__ != '__main__':
 
 import argparse
 import logging
-from subprocess import call, check_output
+from subprocess import call, check_output, DEVNULL
 from time import time, sleep, ctime
 from string import whitespace
 from os import walk, access, X_OK, chdir
@@ -20,8 +20,16 @@ import sys
 # functions
 #
 
+def _call(*call_args, **call_kwargs):
+
+	call_kwargs = {}
+	if args.quiet:
+		call_kwargs['stdout'] = DEVNULL
+
+	return call(*call_args, **call_kwargs)
+
 def call_dispatcher(executable):
-	return call((executable, args.interface,))
+	return _call((executable, args.interface,))
 
 def get_executables(directories):
 	executables = []
@@ -38,20 +46,20 @@ def get_executables(directories):
 
 def dispatch_pre():
 	for executable in get_executables(DISPATCHERS_DIRS_PRE):
-		logging.debug("		will run '%s' as a pre dispatcher" % executable)
+		logging.info("running '%s' as a pre dispatcher" % executable)
 		if call_dispatcher(executable):
-			logging.info("'%s' returned not zero!" % executable)
+			logging.info("'%s' returned non-zero exit code!" % executable)
 			return False
 	return True
 
 def dispatch_post():
 	for executable in get_executables(DISPATCHERS_DIRS_POST):
-		logging.debug("		will run '%s' as a post dispatcher" % executable)
+		logging.info("running '%s' as a post dispatcher" % executable)
 		call_dispatcher(executable)
 
 def try_to_sleep():
 	if dispatch_pre():
-		call([args.sleep_cmd], shell=True)
+		_call([args.sleep_cmd], shell=True)
 		dispatch_post()
 		return True
 	return False
@@ -108,13 +116,14 @@ DISPATCHERS_DIRS_POST = (
 
 logging.getLogger().name = "autosuspend"
 
+logging.getLogger().setLevel(logging.INFO)
 if args.debug:
 	logging.getLogger().setLevel(logging.DEBUG)
 
 if args.quiet:
 	logging.getLogger().setLevel(logging.WARN)
 
-logging.debug(
+logging.info(
 	"Will sleep after network activity less than %i packets in %i seconds on %s"
 	% (args.threshold, args.timeout, args.interface) )
 
@@ -143,7 +152,7 @@ while True:
 		expired = (time_now - measurement_time) > args.timeout
 
 		if active:
-			logging.debug("	Activity - deleting record (%s => %i)"
+			logging.debug("Activity - deleting record (%s => %i)"
 					% (ctime(measurement_time), measurement_packets))
 			measurements.remove(measurement)
 			continue
@@ -151,11 +160,11 @@ while True:
 		if not expired:
 			break
 		else:
-			logging.info("	Not enough activity since %s! Try to sleep..."
+			logging.info("Not enough activity since %s! Try to sleep..."
 					% ctime(measurement_time))
 			measurements.remove(measurement)
 			if try_to_sleep():
-				logging.info("	Sleep was successfull! Resetting...")
+				logging.info("Sleep was successful! Resetting...")
 				measurements = []
 				break
 	sleep(args.interval)
