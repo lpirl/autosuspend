@@ -8,44 +8,43 @@ rarely and that is able to wake on unicast packets.
 It was written for a proof of concept, that servers can be suspended
 in order to save resources.
 
-### Installation
-
-(Pssssst: for best success, you want to read the detailed How-to. See bottom of page.)
-
-You need Python 3.
-
-Checkout this repository and simply run `./autosuspend.py eth0`.
-
-If you are interested in what autosuspend is doing, invoke with
-`./autosuspend.py -d eth0`.
-
-In Debian, one would put something like this in `/etc/rc.local`:
-
-	nice -n 10 /path/to/autosuspend.py eth0 &
-
-For Arch, there is a Systemd service and you can install autosuspend for all users like this:
-
-```
-sudo cp autosuspend.py /usr/bin
-sudo mkdir -p /etc/autosuspend
-sudo cp -R autosuspend.pre autosuspend.post /etc/autosuspend/
-
-sudo cp autosuspend.service /usr/lib/systemd/system
-sudo systemctl enable autosuspend.service
-sudo systemctl start autosuspend.service
-```
-
-### Configuration
-
-See `./autosuspend.py -h`.
-
 ### Dispatchers
 
-Executable scripts in `autosuspend.pre/` and `autosuspend.post/` will be run
-(guess what:) right before and after suspending.
-Scripts exiting with a status other than `0` in `autosuspend.pre/` will
+Executable scripts in the directories `autosuspend.pre/` and `autosuspend.post/` will be run
+(guess what) right before and after suspending.
+Enable (`$ chmod +x …`) and disable (`$ chmod -x …`) them as you wish.
+Scripts exiting with an exit status other than `0` in `autosuspend.pre/` will
 prevent the machine from suspending.
-Every script will receive the interface we are listening on as only argument.
+Every script will receive the interface we are listening on as the first argument.
+
+### Installation
+
+* for best success, read the [how-to](howto.rst)
+* install Python 3.
+* clone this repository
+  
+  `$ git clone https://github.com/lpirl/autosuspend.git`
+
+* optional: run `$ /path/to/autosuspend.py --help` and choose your desired options
+
+#### automatic
+
+* go to the checked-out directory
+* install autosuspend to `/opt`: `$ make install`
+* if you want a systemd service to be installed, run `$ make install_systemd_service` as well
+* edit the created file `autosuspend.service` to your liking
+
+  (if you do, run `$ systemctl daemon-reload` afterwards)
+
+#### manual
+
+Put something like this in your crontab:
+
+	@reboot nice -n 10 /path/to/autosuspend.py [your options] [your device] &
+
+### Debugging
+
+You can run `$ ./autosuspend.py -d [other options] [your device]` to see why your machine is [not] suspending.
 
 ## Detailed How-to
 
