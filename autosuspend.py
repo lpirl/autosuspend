@@ -56,11 +56,33 @@ def dispatch_post():
     call_dispatcher(executable)
 
 def try_to_sleep():
-  if dispatch_pre():
+
+  def _sleep_autodetect():
+
+    logging.debug("try to suspend via systemd")
+    if _call(['systemctl', 'suspend']):
+      return True
+
+    logging.debug("try to suspend via pm-suspend")
+    if _call(['pm-suspend']):
+      return True
+
+    logging.debug("try to suspend via /sys/power/state")
+    if _call(['echo mem > /sys/power/state'], shell=True):
+      return True
+
+    logging.critical("No suspend mechanism worked!")
+
+  if not dispatch_pre():
+    return False
+
+  if args.sleep_cmd:
     _call([args.sleep_cmd], shell=True)
-    dispatch_post()
-    return True
-  return False
+  else:
+    _sleep_autodetect()
+
+  dispatch_post()
+  return True
 
 def get_packets():
   packet_fields = [2, 10]
@@ -89,8 +111,10 @@ parser.add_argument('-i', '--interval', type=int, default=60,
                     help='How many seconds to sleep between measurements?')
 parser.add_argument('-s', '--threshold', type=int, default=2500,
                     help='Amount of packages to consider the interface as active.')
-parser.add_argument('-c', '--sleep_cmd', type=str, default="pm-suspend",
-                    help='The executable to call to suspend the machine.')
+parser.add_argument('-c', '--sleep_cmd', type=str,
+                    help=('The executable to call to suspend the machine. '
+                          'If unset, try to suspend via (in that order): '
+                          'systemd, pm-suspend, kernel)'))
 parser.add_argument('-d', '--debug', action='store_true', default=False,
                     help='Print debug output?')
 parser.add_argument('-q', '--quiet', action='store_true', default=False,
@@ -122,8 +146,8 @@ if args.quiet:
   logging.getLogger().setLevel(logging.WARN)
 
 logging.info(
-    "Will sleep after network activity less than %i packets in %i seconds on %s"
-    % (args.threshold, args.timeout, args.interface)
+    "Will sleep after network activity less than %i packets in %i seconds on %s",
+    args.threshold, args.timeout, args.interface
 )
 
 chdir(dirname(sys.argv[0]) or '.')
