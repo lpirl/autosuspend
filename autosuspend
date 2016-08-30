@@ -8,11 +8,14 @@ from subprocess import call, DEVNULL
 from time import time, sleep, ctime
 from os import walk, access, X_OK, chdir
 from os.path import join, dirname, isdir
+from re import compile as re_compile
 
 if __name__ != '__main__':
   raise NotImplementedError(
       "This is module should only be called directly from command line."
   )
+
+NUMERIC_RE = re_compile(r'[0-9]+')
 
 ####################
 # functions
@@ -39,7 +42,18 @@ def get_executables(directories):
         script = join(root, filename)
         if access(script, X_OK):
           executables.append(script)
-  executables.sort()
+
+  def numericindex(string):
+    match = NUMERIC_RE.search(string)
+    if match:
+      return match.group(0)
+    return 0
+
+  executables.sort(key=numericindex)
+
+  import pdb
+  pdb.set_trace()
+
   return executables
 
 def dispatch_pre():
