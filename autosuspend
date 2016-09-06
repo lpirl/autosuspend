@@ -50,10 +50,6 @@ def get_executables(directories):
     return 0
 
   executables.sort(key=numericindex)
-
-  import pdb
-  pdb.set_trace()
-
   return executables
 
 def dispatch_pre():
