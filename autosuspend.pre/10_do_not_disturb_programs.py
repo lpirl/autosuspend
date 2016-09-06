@@ -18,6 +18,7 @@ DO_NOT_DISTURB = (
 	"curl",
 	"aria2c",
 	"btrfs",
+	"duperemove",
 	"tmux",
 )
 
