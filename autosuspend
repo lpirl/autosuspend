@@ -70,16 +70,22 @@ def try_to_sleep():
   def _sleep_autodetect():
 
     logging.debug("try to suspend via systemd")
-    if _call(['systemctl', 'suspend']):
-      return True
+    try:
+      return 0 == _call(['systemctl', 'suspend'])
+    except FileNotFoundError:
+      pass
 
     logging.debug("try to suspend via pm-suspend")
-    if _call(['pm-suspend']):
-      return True
+    try:
+      return 0 == _call(['pm-suspend'])
+    except FileNotFoundError:
+      pass
 
     logging.debug("try to suspend via /sys/power/state")
-    if _call(['echo mem > /sys/power/state'], shell=True):
-      return True
+    try:
+      return 0 == _call(['echo mem > /sys/power/state'], shell=True)
+    except FileNotFoundError:
+      pass
 
     logging.critical("No suspend mechanism worked!")
 
