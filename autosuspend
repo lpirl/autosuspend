@@ -46,7 +46,7 @@ def get_executables(directories):
   def numericindex(string):
     match = NUMERIC_RE.search(string)
     if match:
-      return match.group(0)
+      return int(match.group(0))
     return 0
 
   executables.sort(key=numericindex)
