@@ -69,25 +69,32 @@ def try_to_sleep():
 
   def _sleep_autodetect():
 
-    logging.debug("try to suspend via systemd")
-    try:
-      return 0 == _call(['systemctl', 'suspend'])
-    except FileNotFoundError:
-      pass
+    TRY_COMMANDS = (
+      ('systemctl', 'suspend'),
+      ('pm-suspend'),
+    )
 
-    logging.debug("try to suspend via pm-suspend")
-    try:
-      return 0 == _call(['pm-suspend'])
-    except FileNotFoundError:
+    for command in TRY_COMMANDS:
+      str_command = " ".join(command)
+      logging.debug("try to suspend via `%s`" % str_command)
+      try:
+        if 0 == _call(command):
+          return
+        else:
+          logging.debug("`%s`: returned a non-zero exit status" % str_command)
+      except FileNotFoundError:
+        logging.debug("`%s`: command not found" % str_command)
       pass
 
     logging.debug("try to suspend via /sys/power/state")
     try:
-      return 0 == _call(['echo mem > /sys/power/state'], shell=True)
+      with open('/sys/power/state', 'w') as fp:
+        fp.write("mem")
+      return True
     except FileNotFoundError:
       pass
 
-    logging.critical("No suspend mechanism worked!")
+    logging.critical("No suspend mechanism worked")
 
   if not dispatch_pre():
     return False
