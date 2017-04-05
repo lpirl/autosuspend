@@ -8,18 +8,19 @@ from subprocess import call, check_output
 from sys import exit
 
 DO_NOT_DISTURB = (
-	"aptitude",
 	"apt-get",
-	"rsync",
-	"pacman",
-	"mv",
-	"cp",
-	"wget",
-	"curl",
+	"aptitude",
 	"aria2c",
 	"btrfs",
+	"clamscan",
+	"cp",
+	"curl",
 	"duperemove",
+	"mv",
+	"pacman",
+	"rsync",
 	"tmux",
+	"wget",
 )
 
 processes = check_output(["ps", "-e" ,"-c"])
