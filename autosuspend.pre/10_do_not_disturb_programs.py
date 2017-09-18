@@ -12,6 +12,7 @@ DO_NOT_DISTURB = (
 	"aptitude",
 	"aria2c",
 	"btrfs",
+	"btrfsck",
 	"clamscan",
 	"cp",
 	"curl",
