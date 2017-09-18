@@ -70,8 +70,8 @@ def try_to_sleep():
   def _sleep_autodetect():
 
     TRY_COMMANDS = (
-      ('systemctl', 'suspend'),
       ('pm-suspend'),
+      ('systemctl', 'suspend'),
     )
 
     for command in TRY_COMMANDS:
