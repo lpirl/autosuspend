@@ -5,9 +5,7 @@
 FIND_DEVS='sd[c-z]'
 
 sync
-for f in $(find /dev -name $FIND_DEVS)
-do
-	hdparm -y $f &
-done
-wait
+
+find /dev -name $FIND_DEVS -print0 | xargs -0P0 hdparm -y
+
 exit 0
