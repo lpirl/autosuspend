@@ -22,7 +22,7 @@ Every script will receive the interface we are listening on as the first argumen
 * for best success, read the [how-to](howto.rst)
 * install Python 3.
 * clone this repository
-  
+
   `$ git clone https://github.com/lpirl/autosuspend.git`
 
 * optional: run `$ /path/to/autosuspend.py --help` and choose your desired options
@@ -40,7 +40,7 @@ Every script will receive the interface we are listening on as the first argumen
 
 Put something like this in your crontab:
 
-	@reboot nice -n 10 /path/to/autosuspend.py [your options] [your device] &
+  @reboot nice -n 10 /path/to/autosuspend.py [your options] [your device] &
 
 ### Debugging
 
@@ -49,4 +49,3 @@ You can run `$ ./autosuspend.py -d [other options] [your device]` to see why you
 ## Detailed How-to
 
 See [here](howto.rst "how to").
-
