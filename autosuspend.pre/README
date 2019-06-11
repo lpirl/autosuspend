@@ -1,4 +1,14 @@
 * put your scripts here that should run pre a suspend
-* scripts will be sorted regardless of subdirectory
+* scripts will be sorted by name, regardless of subdirectory
 * any script exiting with an exit status not 0 will cancel the suspend
-* every script will receive the interface we listen on as only argument
+* every script will receive the interface we listen on as first and only
+  argument
+* you are free to adapt the following prefix convention:
+
+  * prefixes ``0-99`` for debug purposes
+  * prefixes ``100-499`` for checks if we should suspend
+  * prefixes ``500-899`` to prepare for the suspend
+  * prefixes ``900-999`` for debug purposes
+
+* consider to prefix scripts which are cheap and likely to prevent the
+  suspend with lower prefixes
