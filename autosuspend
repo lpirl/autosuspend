@@ -17,7 +17,7 @@ from configparser import ConfigParser
 from collections import deque
 from math import ceil
 
-NUMERIC_RE = re_compile(r'[0-9]+')
+NUMERIC_RE = re_compile(r'^[0-9]+')
 
 DISPATCHERS_DIRS_PRE = (
     "/etc/autosuspend/autosuspend.pre/",
@@ -35,7 +35,7 @@ SUSPEND_COMMANDS = (
 )
 
 # you see the defaults here; this dictionary will be updated with the
-# contents from the INI file and command-line arguments (in order)
+# contents from the INI file and command line arguments (in order)
 CONFIG = {
   'timeout': 3700,
   'interval': 59,
@@ -48,17 +48,30 @@ CONFIG = {
 
 
 def update_config_from_ini_file():
+  '''
+  reads configuration options from INI file and updates ``CONFIG``
+  accordingly
+  '''
   config_parser = ConfigParser()
   config_parser.read('autosuspend.ini')
   ini_config = config_parser['autosuspend']
+
+  # You might wonder why we do not need to convert the data types. This
+  # is because we feed the values read from the INI file in the
+  # ArgumentParser which does the job for us.
+
   CONFIG.update(ini_config)
 
 
 def update_config_from_args():
+  '''
+  configures command line arguments, parses them, and updates ``CONFIG``
+  accordingly
+  '''
 
   args_parser = argparse.ArgumentParser(
     description=__doc__,
-    epilog='Command-line options have preference over INI file contents.',
+    epilog='Command-line options have preference over INI file options.',
     formatter_class=argparse.ArgumentDefaultsHelpFormatter
   )
 
@@ -94,7 +107,7 @@ def update_config_from_args():
 
   args_config = args_parser.parse_args()
 
-  # "debug" command-line argument also overrides "quiet" from INI file
+  # "debug" command line argument also overrides "quiet" from INI file
   if args_config.debug and CONFIG['quiet']:
     args_config.quiet = False
 
@@ -102,6 +115,7 @@ def update_config_from_args():
 
 
 def setup_logging():
+  ''' configures the logger with a name, the log level, etc. '''
   logger = logging.getLogger()
   logger.name = "autosuspend"
   logger.setLevel(logging.INFO)
@@ -118,6 +132,10 @@ def setup_logging():
 
 
 def detect_interface():
+  '''
+  sets the name of the interface which is used for the default route;
+  exits the program with an error message if this cannot be determined
+  '''
   with open("/proc/net/route") as route_file:
     for line in route_file:
       name, dest, _, flags, _ = line.strip().split(maxsplit=4)
@@ -132,6 +150,10 @@ def detect_interface():
   exit(1)
 
 def _call(*call_args, **call_kwargs):
+  '''
+  wrapper for everything we call externally in order to mute stdout if
+  we are asked to be quiet
+  '''
 
   call_kwargs = {}
   if CONFIG['quiet']:
@@ -141,10 +163,18 @@ def _call(*call_args, **call_kwargs):
 
 
 def call_dispatcher(executable):
+  '''
+  calls a single dispatcher with the (either configured or automatically
+  detected) network interface as first argument
+  '''
   return _call((executable, CONFIG['interface'],))
 
 
 def get_executables(directories):
+  '''
+  returns an ordered list of executable files which are present in the
+  specified directories
+  '''
   executables = []
   for directory in directories:
     if not isdir(directory):
@@ -156,6 +186,9 @@ def get_executables(directories):
           executables.append(script)
 
   def numericindex(string):
+    '''
+    returns leading digits of ``string`` and ``0`` if there are none
+    '''
     match = NUMERIC_RE.search(string)
     if match:
       return int(match.group(0))
@@ -166,6 +199,10 @@ def get_executables(directories):
 
 
 def dispatch_pre():
+  '''
+  runs the pre-suspend dispatchers, one after the other, returns
+  ``False`` once a dispatcher does not succeed, ``True`` otherwise
+  '''
   for executable in get_executables(DISPATCHERS_DIRS_PRE):
     logging.info("running '%s' as a pre dispatcher", executable)
     if call_dispatcher(executable):
@@ -175,14 +212,25 @@ def dispatch_pre():
 
 
 def dispatch_post():
+  ''' runs the post-suspend dispatchers '''
   for executable in get_executables(DISPATCHERS_DIRS_POST):
     logging.info("running '%s' as a post dispatcher", executable)
     call_dispatcher(executable)
 
 
 def try_to_suspend():
+  '''
+  Top-level coordination to suspend the machine.
+
+  I.e., run the pre-suspend dispatchers, suspend if the former succeed,
+  run the post-suspend dispatchers.
+  '''
 
   def _suspend_autodetect():
+    '''
+    tries to suspend by issuing the suspend commands specified in
+    ``SUSPEND_COMMANDS`` one after the other
+    '''
 
     for command in SUSPEND_COMMANDS:
 
@@ -219,6 +267,10 @@ def try_to_suspend():
 
 
 def get_packets():
+  '''
+  returns the sum of the receive and send packet counters for the
+  (either configured or automatically detected) network interface
+  '''
   with open('/proc/net/dev') as dev_file:
     for line in dev_file:
       if not line.startswith(CONFIG['interface']):
@@ -236,6 +288,9 @@ def get_packets():
 
 
 def run_forever():
+  '''
+  top-level coordination to regularly check if to suspend
+  '''
 
   measurements = deque()
 
@@ -283,6 +338,7 @@ def run_forever():
     sleep(CONFIG['interval'])
 
 def main():
+  ''' top-level coordination of program execution '''
 
   chdir(dirname(sys.argv[0]) or '.')
 
