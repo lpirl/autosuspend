@@ -1,5 +1,9 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S python3 -OO
 # coding: utf-8
+
+'''
+This script suspends your computer on few network activity.
+'''
 
 import sys
 import logging
@@ -9,28 +13,136 @@ from time import time, sleep, ctime
 from os import walk, access, X_OK, chdir
 from os.path import join, dirname, isdir
 from re import compile as re_compile
-
-if __name__ != '__main__':
-  raise NotImplementedError(
-      "This is module should only be called directly from command line."
-  )
+from configparser import ConfigParser
+from collections import deque
+from math import ceil
 
 NUMERIC_RE = re_compile(r'[0-9]+')
 
-####################
-# functions
-#
+DISPATCHERS_DIRS_PRE = (
+    "/etc/autosuspend/autosuspend.pre/",
+    "./autosuspend.pre/",
+)
+DISPATCHERS_DIRS_POST = (
+    "/etc/autosuspend/autosuspend.post/",
+    "./autosuspend.post/",
+)
+
+SUSPEND_COMMANDS = (
+  ('pm-suspend',),
+  ('systemctl', 'suspend'),
+  ('sh', '-c', 'echo mem > /sys/power/state'),
+)
+
+# you see the defaults here; this dictionary will be updated with the
+# contents from the INI file and command-line arguments (in order)
+CONFIG = {
+  'timeout': 3700,
+  'interval': 59,
+  'threshold': 5000,
+  'suspend_cmd': 'auto',
+  'debug': True,
+  'quiet': True,
+  'interface': 'auto',
+}
+
+
+def update_config_from_ini_file():
+  config_parser = ConfigParser()
+  config_parser.read('autosuspend.ini')
+  ini_config = config_parser['autosuspend']
+  CONFIG.update(ini_config)
+
+
+def update_config_from_args():
+
+  args_parser = argparse.ArgumentParser(
+    description=__doc__,
+    epilog='Command-line options have preference over INI file contents.',
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter
+  )
+
+  args_parser.add_argument(
+    '-t', '--timeout', type=int,
+    default=CONFIG['timeout'],
+    help='How many seconds must the network be idle?',
+  )
+  args_parser.add_argument(
+    '-i', '--interval', type=int, default=CONFIG['interval'],
+    help='How many seconds to sleep between measurements?'
+  )
+  args_parser.add_argument(
+    '-s', '--threshold', type=int, default=CONFIG['threshold'],
+    help='Amount of packages to consider the interface ' 'as active.'
+  )
+  args_parser.add_argument(
+    '-c', '--suspend_cmd', type=str, default=CONFIG['suspend_cmd'],
+    help=('The executable to call to suspend the machine. If unset, try '
+          'to suspend via (in that order): systemd, pm-suspend, kernel)')
+  )
+  args_parser.add_argument(
+    '-d', '--debug', action='store_true', default=CONFIG['debug'],
+    help='Print debug output?'
+  )
+  args_parser.add_argument(
+    '-q', '--quiet', action='store_true', default=CONFIG['quiet'],
+    help='Be quiet?'
+  )
+  args_parser.add_argument(
+    'interface', type=str, nargs='?', default=CONFIG['interface'],
+    help='Use which interface to determine network activity?')
+
+  args_config = args_parser.parse_args()
+
+  # "debug" command-line argument also overrides "quiet" from INI file
+  if args_config.debug and CONFIG['quiet']:
+    args_config.quiet = False
+
+  CONFIG.update(args_config.__dict__)
+
+
+def setup_logging():
+  logger = logging.getLogger()
+  logger.name = "autosuspend"
+  logger.setLevel(logging.INFO)
+
+  if CONFIG['debug'] and CONFIG['quiet']:
+    logging.critical('You cannot set both options, "quiet" and "debug"; '
+                     'please check your configuration')
+    exit(1)
+
+  if CONFIG['debug']:
+    logger.setLevel(logging.DEBUG)
+  if CONFIG['quiet']:
+    logger.setLevel(logging.WARN)
+
+
+def detect_interface():
+  with open("/proc/net/route") as route_file:
+    for line in route_file:
+      name, dest, _, flags, _ = line.strip().split(maxsplit=4)
+      if dest != '00000000':
+        continue
+      if not int(flags, 16) & 2:
+        continue
+      CONFIG['interface'] = name
+      return
+  logging.critical("Could not determine default network interface; "
+                   "you may consider configuring it manually.")
+  exit(1)
 
 def _call(*call_args, **call_kwargs):
 
   call_kwargs = {}
-  if args.quiet:
+  if CONFIG['quiet']:
     call_kwargs['stdout'] = DEVNULL
 
   return call(*call_args, **call_kwargs)
 
+
 def call_dispatcher(executable):
-  return _call((executable, args.interface,))
+  return _call((executable, CONFIG['interface'],))
+
 
 def get_executables(directories):
   executables = []
@@ -52,6 +164,7 @@ def get_executables(directories):
   executables.sort(key=numericindex)
   return executables
 
+
 def dispatch_pre():
   for executable in get_executables(DISPATCHERS_DIRS_PRE):
     logging.info("running '%s' as a pre dispatcher", executable)
@@ -60,157 +173,132 @@ def dispatch_pre():
       return False
   return True
 
+
 def dispatch_post():
   for executable in get_executables(DISPATCHERS_DIRS_POST):
     logging.info("running '%s' as a post dispatcher", executable)
     call_dispatcher(executable)
 
-def try_to_sleep():
 
-  def _sleep_autodetect():
+def try_to_suspend():
 
-    TRY_COMMANDS = (
-      ('pm-suspend'),
-      ('systemctl', 'suspend'),
-    )
+  def _suspend_autodetect():
 
-    for command in TRY_COMMANDS:
+    for command in SUSPEND_COMMANDS:
+
+      assert isinstance(command, tuple)
+
       str_command = " ".join(command)
-      logging.debug("try to suspend via `%s`" % str_command)
+      logging.debug("try to suspend via `%s`", str_command)
       try:
-        if 0 == _call(command):
-          return
+        if _call(command) == 0:
+          return 0
         else:
-          logging.debug("`%s`: returned a non-zero exit status" % str_command)
+          logging.debug("`%s`: returned a non-zero exit status", str_command)
       except FileNotFoundError:
-        logging.debug("`%s`: command not found" % str_command)
-      pass
+        logging.debug("`%s`: command not found", str_command)
 
-    logging.debug("try to suspend via /sys/power/state")
-    try:
-      with open('/sys/power/state', 'w') as fp:
-        fp.write("mem")
-      return True
-    except FileNotFoundError:
-      pass
-
-    logging.critical("No suspend mechanism worked")
+    logging.warning(
+      "No suspend mechanism worked. However, this program will continue "
+      "as if the suspend worked in order not to run the dispatchers in "
+      "fast loops. Maybe the next suspend works."
+    )
+    return 0
 
   if not dispatch_pre():
     return False
 
-  if args.sleep_cmd:
-    _call([args.sleep_cmd], shell=True)
+  if CONFIG['suspend_cmd'] == 'auto':
+    return_value = _suspend_autodetect()
   else:
-    _sleep_autodetect()
+    return_value = _call([CONFIG['suspend_cmd']], shell=True)
 
   dispatch_post()
-  return True
+
+  return return_value == 0
+
 
 def get_packets():
-  packet_fields = [2, 10]
-  file = open("/proc/net/dev", 'r')
-  lines = file.readlines()
-  file.close()
-  lines.reverse()
-  for line in lines:
-    if args.interface in line:
-      line = line.replace(":", " ")
-      line = line.split()
-      packet_counts = [int(line[i]) for i in packet_fields]
-      return sum(packet_counts)
+  with open('/proc/net/dev') as dev_file:
+    for line in dev_file:
+      if not line.startswith(CONFIG['interface']):
+        continue
+      line_fields = line.split()
+
+      # field 2 is receive counter, field 10 is send counter:
+      return int(line_fields[2]) + int(line_fields[10])
+
+  logging.critical(
+    "Could not determine packet count for '%s'", CONFIG['interface']
+  )
+  logging.critical("Is this properly configured?")
+  exit(1)
 
 
-####################
-# CLI args.interface
-#
-parser = argparse.ArgumentParser(
-    description="This script suspends your computer on few network activity.",
-    formatter_class=argparse.ArgumentDefaultsHelpFormatter
-)
-parser.add_argument('-t', '--timeout', type=int, default=1800,
-                    help='How many seconds must the network be idle?')
-parser.add_argument('-i', '--interval', type=int, default=60,
-                    help='How many seconds to sleep between measurements?')
-parser.add_argument('-s', '--threshold', type=int, default=2500,
-                    help='Amount of packages to consider the interface as active.')
-parser.add_argument('-c', '--sleep_cmd', type=str,
-                    help=('The executable to call to suspend the machine. '
-                          'If unset, try to suspend via (in that order): '
-                          'systemd, pm-suspend, kernel)'))
-parser.add_argument('-d', '--debug', action='store_true', default=False,
-                    help='Print debug output?')
-parser.add_argument('-q', '--quiet', action='store_true', default=False,
-                    help='Be quiet?')
-parser.add_argument('interface', type=str,
-                    help='Use which interface to determine network activity?')
-args = parser.parse_args()
+def run_forever():
 
+  measurements = deque()
 
-####################
-# main program
-#
-DISPATCHERS_DIRS_PRE = (
-    "/etc/autosuspend/autosuspend.pre/",
-    "./autosuspend.pre/",
-)
-DISPATCHERS_DIRS_POST = (
-    "/etc/autosuspend/autosuspend.post/",
-    "./autosuspend.post/",
-)
+  while True:
 
-logging.getLogger().name = "autosuspend"
+    time_now = time()
+    packets_now = get_packets()
 
-logging.getLogger().setLevel(logging.INFO)
-if args.debug:
-  logging.getLogger().setLevel(logging.DEBUG)
+    measurements.append((time_now, packets_now))
+    logging.debug("%i packets on %s", packets_now, ctime(time_now))
 
-if args.quiet:
-  logging.getLogger().setLevel(logging.WARN)
+    while measurements:
+      measurement_time, measurement_packets = measurements[0]
 
-logging.info(
-    "Will sleep after network activity less than %i packets in %i seconds on %s",
-    args.threshold, args.timeout, args.interface
-)
-
-chdir(dirname(sys.argv[0]) or '.')
-
-measurements = []
-while True:
-  time_now = time()
-  packets_now = get_packets()
-
-  if packets_now is None:
-    logging.critical(
-        "Could not determine packet count for '%s'", args.interface
-    )
-    logging.critical("Is this properly configured?")
-    exit(1)
-
-  measurements.append((time_now, packets_now))
-  logging.debug("%i packets at %s", packets_now, ctime(time_now))
-
-  for measurement in measurements[:]:
-    measurement_time = measurement[0]
-    measurement_packets = measurement[1]
-
-    active = (packets_now - measurement_packets) > args.threshold
-    expired = (time_now - measurement_time) > args.timeout
-
-    if active:
-      logging.debug("Activity - deleting record (%s => %i)",
-                    ctime(measurement_time), measurement_packets)
-      measurements.remove(measurement)
-      continue
-
-    if not expired:
-      break
-    else:
-      logging.info("Not enough activity since %s! Try to sleep...",
-                   ctime(measurement_time))
-      measurements.remove(measurement)
-      if try_to_sleep():
-        logging.info("Sleep was successful! Resetting...")
-        measurements = []
+      if (time_now - measurement_time) < CONFIG['timeout']:
+        logging.debug("Oldest measurement from %s younger than %i s",
+                      ctime(measurement_time), CONFIG['timeout'])
         break
-  sleep(args.interval)
+
+      if (packets_now - measurement_packets) > CONFIG['threshold']:
+        logging.debug(("More than %i packets network activity since %s"
+                       " - deleting record"),
+                      CONFIG['threshold'], ctime(measurement_time))
+        measurements.popleft()
+        continue
+
+      logging.info("Not enough activity since %s. Trying to suspend...",
+                   ctime(measurement_time))
+      measurements.popleft()
+      if try_to_suspend():
+        logging.info("Suspend was successful! Resetting...")
+        measurements.clear()
+        break
+
+
+    assert len(measurements) <= \
+           ceil(CONFIG['timeout'] / CONFIG['interval']), \
+           ("after checking all measurements, there shouldn't be more "
+            "in the deque than the number of measurements that can be "
+            "captured during ``timeout`` with the corresponding "
+            "``interval``")
+
+    logging.debug("Going to sleep %i s until next check",
+                  CONFIG['interval'])
+    sleep(CONFIG['interval'])
+
+def main():
+
+  chdir(dirname(sys.argv[0]) or '.')
+
+  update_config_from_ini_file()
+  update_config_from_args()
+  setup_logging()
+  detect_interface()
+
+  logging.debug("Final config: %r", CONFIG)
+
+  logging.info(
+    "Will sleep after network activity less than %i packets in %i seconds on %s",
+    CONFIG['threshold'], CONFIG['timeout'], CONFIG['interface']
+  )
+
+  run_forever()
+
+if __name__ == '__main__':
+  main()
