@@ -45,8 +45,8 @@ CONFIG = {
   'interval': 59,
   'threshold': 5000,
   'suspend_cmd': 'auto',
-  'debug': True,
-  'quiet': True,
+  'debug': False,
+  'quiet': False,
   'interface': 'auto',
 }
 
@@ -110,10 +110,6 @@ def update_config_from_args():
     help='Use which interface to determine network activity?')
 
   args_config = args_parser.parse_args()
-
-  # "debug" command line argument also overrides "quiet" from INI file
-  if args_config.debug and CONFIG['quiet']:
-    args_config.quiet = False
 
   CONFIG.update(args_config.__dict__)
 
