@@ -277,6 +277,7 @@ def get_packets():
   '''
   with open('/proc/net/dev') as dev_file:
     for line in dev_file:
+      line = line.strip()
       if not line.startswith(CONFIG['interface']):
         continue
       line_fields = line.split()
