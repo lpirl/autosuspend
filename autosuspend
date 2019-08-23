@@ -5,7 +5,7 @@ exec python3 -OO "$0" "$@"
 
 # coding: utf-8
 
-'''
+__doc__ = '''
 This script suspends your computer on few network activity.
 '''
 
