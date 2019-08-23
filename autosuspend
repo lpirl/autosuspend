@@ -1,4 +1,8 @@
-#!/usr/bin/env -S python3 -OO
+#!/bin/sh
+''':'
+exec python3 -OO "$0" "$@"
+'''
+
 # coding: utf-8
 
 '''
