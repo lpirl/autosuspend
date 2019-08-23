@@ -247,9 +247,9 @@ def try_to_suspend():
         logging.debug("`%s`: command not found", str_command)
 
     logging.warning(
-      "No suspend mechanism worked. However, this program will continue "
-      "as if the suspend worked in order not to run the dispatchers in "
-      "fast loops. Maybe the next suspend works."
+      "Suspend mechanism did not work. However, this program will "
+      "continue as if the suspend worked in order not to run the "
+      "dispatchers in fast loops. Maybe the next suspend works."
     )
     return 0
 
@@ -320,12 +320,29 @@ def run_forever():
 
       logging.info("Not enough activity since %s. Trying to suspend...",
                    ctime(measurement_time))
-      measurements.popleft()
-      if try_to_suspend():
-        logging.info("Suspend was successful! Resetting...")
-        measurements.clear()
-        break
 
+      if try_to_suspend():
+        logging.info("Suspend successful. Resetting ...")
+        # We need to drop all measurements because otherwise – after
+        # a suspend – we'd probably try to suspend again right away:
+        measurements.clear()
+      else:
+        logging.info("Suspend unsuccessful. Going on ...")
+        # At this point we know that the measurement is older than
+        # timeout. Logically, it would be no problem to keep this
+        # measurement, since it would be removed once there is either
+        # more than ``threshold`` network activity or after a
+        # successful suspend. However, in order not to leak memory, we
+        # remove this measurement and consider the next one next time
+        # this loop is being executed.
+        measurements.popleft()
+
+      # We also know, that we tried to suspend. Assuming the suspend
+      # was successful, we can start over measuring after sleeping.
+      # Assuming the suspend was unsuccessful, we want to avoid suspend
+      # attempts in fast succession.
+      # So in both cases, we want to break the loop:
+      break
 
     assert len(measurements) <= \
            ceil(CONFIG['timeout'] / CONFIG['interval']), \
