@@ -93,7 +93,7 @@ def update_config_from_args():
     help='Amount of packages to consider the interface ' 'as active.'
   )
   args_parser.add_argument(
-    '-c', '--suspend_cmd', type=str, default=CONFIG['suspend_cmd'],
+    '-c', '--suspend-cmd', type=str, default=CONFIG['suspend_cmd'],
     help=('The executable to call to suspend the machine. If unset, try '
           'to suspend via (in that order): systemd, pm-suspend, kernel)')
   )
