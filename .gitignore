@@ -2,3 +2,4 @@
 *.pyo
 
 # generated automatically
+autosuspend.service
