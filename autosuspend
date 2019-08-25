@@ -1,6 +1,13 @@
 #!/bin/sh
 ''':'
-exec python3 -OO "$0" "$@"
+INTERPRETERS="pypy3 python3"
+for c in $INTERPRETERS
+do
+  command -v $c >/dev/null 2>&1 || continue
+  exec $c -OO "$0" "$@"
+done
+echo "no Python interpreter found (tried: $INTERPRETERS)"
+exit 255
 '''
 
 # coding: utf-8
