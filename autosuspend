@@ -375,4 +375,9 @@ def main():
   run_forever()
 
 if __name__ == '__main__':
-  main()
+  try:
+    main()
+  except KeyboardInterrupt:
+    print()
+    logging.info('keyboard interrupt - bye')
+    exit(0)
