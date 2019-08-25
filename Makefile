@@ -21,6 +21,8 @@ all: $(SERVICE_FILE)
 .PHONY: $(SERVICE_FILE)
 $(SERVICE_FILE):
 	echo "$$SERVICE_FILE_CONTENT" > $@
+	# prevents systemd from warning about world-inaccessible files
+	chmod a+r $@
 
 install: all
 	mkdir -p $(TARGET)
