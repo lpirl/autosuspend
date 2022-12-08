@@ -379,6 +379,9 @@ def main():
     CONFIG['threshold'], CONFIG['timeout'], CONFIG['interface']
   )
 
+  logging.info("Initially run post suspend dispatchers")
+  dispatch_post()
+
   run_forever()
 
 if __name__ == '__main__':
