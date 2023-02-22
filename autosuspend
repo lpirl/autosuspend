@@ -313,20 +313,28 @@ def run_forever():
     while measurements:
       measurement_time, measurement_packets = measurements[0]
 
+      # nothing to do if oldest measurement is younger than timeout
       if (time_now - measurement_time) < CONFIG['timeout']:
         logging.debug("Oldest measurement from %s younger than %i s",
                       ctime(measurement_time), CONFIG['timeout'])
         break
 
-      if (packets_now - measurement_packets) > CONFIG['threshold']:
-        logging.debug(("More than %i packets network activity since %s"
-                       " - deleting record"),
-                      CONFIG['threshold'], ctime(measurement_time))
+      packets_diff = packets_now - measurement_packets
+
+      # delete oldest record if there has been more than threshold
+      # network activity already
+      if CONFIG['threshold'] < packets_diff:
+        logging.debug("Enough network activity since %s "
+                      "(%i < %i packets) – deleting record",
+                      ctime(measurement_time),
+                      CONFIG['threshold'], packets_diff)
         measurements.popleft()
         continue
 
-      logging.info("Not enough activity since %s. Trying to suspend...",
-                   ctime(measurement_time))
+      logging.info("Not enough network activity since %s "
+                   "(%i > %i packets) – trying to suspend ...",
+                   ctime(measurement_time),
+                   CONFIG['threshold'], packets_diff)
 
       if try_to_suspend():
         logging.info("Suspend successful. Resetting ...")
