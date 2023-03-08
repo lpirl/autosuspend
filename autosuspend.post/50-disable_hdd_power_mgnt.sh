@@ -6,6 +6,9 @@
 # (because 'sync' is invoked to clear caches) and thus cause more
 # spin-up/-downs. HDD's don't like that.
 
-find /dev -name 'sd[a-z]' | xargs -P0 hdparm -S0
+lsblk -nrdo rota,path \
+| grep '^1' \
+| awk '{print $2}' \
+| xargs -rP0 hdparm -S0
 
 exit 0
