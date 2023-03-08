@@ -130,7 +130,7 @@ def setup_logging():
   if CONFIG['debug'] and CONFIG['quiet']:
     logging.critical('You cannot set both options, "quiet" and "debug"; '
                      'please check your configuration')
-    exit(1)
+    sys.exit(1)
 
   if CONFIG['debug']:
     logger.setLevel(logging.DEBUG)
@@ -143,7 +143,7 @@ def detect_interface():
   sets the name of the interface which is used for the default route;
   exits the program with an error message if this cannot be determined
   '''
-  with open("/proc/net/route") as route_file:
+  with open("/proc/net/route", encoding="utf-8") as route_file:
     for line in route_file:
       name, dest, _, flags, _ = line.strip().split(maxsplit=4)
       if dest != '00000000':
@@ -154,7 +154,7 @@ def detect_interface():
       return
   logging.critical("Could not determine default network interface; "
                    "you may consider configuring it manually.")
-  exit(1)
+  sys.exit(1)
 
 def _call(*call_args, **call_kwargs):
   '''
@@ -248,8 +248,7 @@ def try_to_suspend():
       try:
         if _call(command) == 0:
           return 0
-        else:
-          logging.debug("`%s`: returned a non-zero exit status", str_command)
+        logging.debug("`%s`: returned a non-zero exit status", str_command)
       except FileNotFoundError:
         logging.debug("`%s`: command not found", str_command)
 
@@ -278,7 +277,7 @@ def get_packets():
   returns the sum of the receive and send packet counters for the
   (either configured or automatically detected) network interface
   '''
-  with open('/proc/net/dev') as dev_file:
+  with open('/proc/net/dev', encoding="utf-8") as dev_file:
     for line in dev_file:
       line = line.strip()
       if not line.startswith(CONFIG['interface']):
@@ -292,7 +291,7 @@ def get_packets():
     "Could not determine packet count for '%s'", CONFIG['interface']
   )
   logging.critical("Is this properly configured?")
-  exit(1)
+  sys.exit(1)
 
 
 def run_forever():
@@ -398,4 +397,4 @@ if __name__ == '__main__':
   except KeyboardInterrupt:
     print()
     logging.info('keyboard interrupt - bye')
-    exit(0)
+    sys.exit(0)
